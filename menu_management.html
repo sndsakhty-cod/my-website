@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#B4232C">
+<title>بيتزا الملكة - المنيو</title>
+
+<!-- Firebase CDN (compat) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  :root{--bg:#0c0705;--bg2:#1b100d;--bg3:#241713;--red:#B4232C;--red2:#7A1418;--cream:#F3E3C3;--cream2:#E4CFA0;--text:#F5EEE0;--text2:#B6A78E;--border:rgba(243,227,195,.10);--radius:16px;}
+  body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+  .main-header{background:linear-gradient(135deg,var(--red) 0%,#000000 100%);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 4px 20px rgba(0,0,0,.4);}
+  .mh-left{display:flex;align-items:center;gap:10px;}
+  .mh-logo{font-size:16px;font-weight:900;background:rgba(255,255,255,.15);width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;}
+  .mh-brand{font-size:15px;font-weight:900;letter-spacing:1px;}
+  .mh-title{font-size:13px;color:rgba(255,255,255,.7);}
+  .conn-dot{width:8px;height:8px;border-radius:50%;background:var(--text2);}
+  .conn-dot.on{background:var(--cream);box-shadow:0 0 6px var(--cream);}
+
+  .main-body{flex:1;overflow-y:auto;padding:16px 16px 90px;min-height:calc(100vh - 130px);}
+  .tab-nav{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--border);display:flex;z-index:100;padding-bottom:env(safe-area-inset-bottom);}
+  .tab-item{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;cursor:pointer;color:var(--text2);font-size:11px;font-weight:700;gap:4px;border:none;background:transparent;transition:all .2s;}
+  .tab-item.active{color:var(--cream);}
+  .tab-content{display:none;}
+
+  .section-card{background:var(--bg2);border-radius:var(--radius);padding:16px;margin-bottom:14px;border:1px solid var(--border);}
+  .section-head{font-size:14px;font-weight:800;margin-bottom:14px;}
+  .empty-msg{text-align:center;padding:30px 20px;color:var(--text2);font-size:14px;}
+
+  /* ===== TOP SELLERS PAGE ===== */
+  .filter-row{display:flex;gap:8px;margin-bottom:16px;}
+  .filter-btn{flex:1;background:var(--bg2);border:1px solid var(--border);color:var(--text2);padding:11px 6px;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;}
+  .filter-btn.active{background:var(--cream);color:#1a0e0c;border-color:var(--cream);}
+
+  .highlight-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+  .highlight-card{background:linear-gradient(135deg,var(--red) 0%,#2a0a0c 100%);border-radius:var(--radius);padding:18px 12px;text-align:center;border:1px solid rgba(243,227,195,.25);display:flex;flex-direction:column;justify-content:center;}
+  .highlight-card.alt{background:linear-gradient(135deg,var(--bg3) 0%,#000 100%);border:1px solid rgba(243,227,195,.15);}
+  .hc-lbl{font-size:11px;color:rgba(245,238,224,.8);font-weight:700;margin-bottom:6px;letter-spacing:.3px;}
+  .hc-val{font-size:19px;font-weight:900;color:var(--cream);word-break:break-word;line-height:1.25;}
+
+  .podium{display:flex;align-items:flex-end;gap:10px;margin-bottom:18px;}
+  .podium-item{flex:1;text-align:center;border-radius:14px;padding:12px 6px 14px;border:1px solid var(--border);position:relative;}
+  .podium-item.gold{background:linear-gradient(180deg,rgba(243,227,195,.18),var(--bg2));border-color:rgba(243,227,195,.5);order:2;padding-top:20px;}
+  .podium-item.silver{background:linear-gradient(180deg,rgba(180,35,44,.16),var(--bg2));border-color:rgba(180,35,44,.5);order:1;}
+  .podium-item.bronze{background:linear-gradient(180deg,rgba(122,20,24,.20),var(--bg2));border-color:rgba(122,20,24,.55);order:3;}
+  .podium-medal{width:26px;height:26px;line-height:26px;border-radius:50%;background:var(--bg3);color:var(--text);font-size:13px;font-weight:900;margin:0 auto 6px;}
+  .podium-item.gold .podium-medal{background:var(--cream);color:#1a0e0c;}
+  .podium-item.silver .podium-medal{background:var(--red);color:#fff;}
+  .podium-item.bronze .podium-medal{background:var(--red2);color:var(--cream);}
+  .podium-img{width:56px;height:56px;border-radius:12px;object-fit:cover;margin:0 auto 6px;display:block;}
+  .podium-monogram{width:56px;height:56px;border-radius:12px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;background:var(--bg3);color:var(--cream);}
+  .podium-name{font-size:12px;font-weight:800;line-height:1.3;min-height:32px;display:flex;align-items:center;justify-content:center;}
+  .podium-qty{font-size:15px;font-weight:900;color:var(--cream);margin-top:4px;}
+  .podium-qty small{display:block;font-size:9px;color:var(--text2);font-weight:600;}
+
+  .top-item-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .top-item-row:last-child{border-bottom:none;}
+  .ti-rank{font-size:14px;font-weight:900;min-width:24px;color:var(--text2);text-align:center;}
+  .ti-img{width:42px;height:42px;border-radius:10px;object-fit:cover;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--bg3);}
+  .ti-info{flex:1;min-width:0;}
+  .ti-name{font-size:14px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ti-bar-wrap{width:100%;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin-top:6px;}
+  .ti-bar{display:block;height:100%;background:linear-gradient(90deg,var(--cream),var(--red));border-radius:3px;}
+  .ti-right{text-align:end;flex-shrink:0;}
+  .ti-qty{font-size:13px;color:var(--cream);font-weight:900;}
+  .ti-rev{font-size:10px;color:var(--text2);}
+
+  /* ===== MENU MANAGEMENT PAGE ===== */
+  .add-btn{width:100%;background:var(--red);color:#fff;border:none;padding:14px;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer;margin-bottom:14px;}
+  .menu-toolbar{display:flex;gap:10px;margin-bottom:10px;}
+  .menu-toolbar .add-btn{margin-bottom:0;flex:1;}
+  .select-toggle-btn{background:var(--bg3);color:var(--text);border:1px solid var(--border);padding:14px 16px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .select-bar{display:flex;gap:10px;margin-bottom:14px;}
+  .select-bar-btn{flex:1;background:var(--bg3);color:var(--text);border:1px solid var(--border);padding:12px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;}
+  .select-bar-btn.danger{background:rgba(122,20,24,.18);color:var(--cream);border-color:var(--red2);}
+  .select-bar-btn:disabled{opacity:.4;cursor:not-allowed;}
+  .menu-card.selectable{cursor:pointer;}
+  .menu-card.selected{border-color:var(--cream);background:rgba(243,227,195,.08);}
+  .mc-checkbox{font-size:20px;line-height:1;padding-top:2px;}
+  .menu-list{display:flex;flex-direction:column;gap:10px;}
+  .menu-card{background:var(--bg2);border-radius:var(--radius);padding:14px;display:flex;align-items:flex-start;gap:12px;border:1px solid var(--border);}
+  .mc-emoji{font-size:36px;width:52px;height:52px;min-width:52px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:10px;background:var(--bg3);}
+  .mc-info{flex:1;min-width:0;}
+  .mc-name{font-size:16px;font-weight:800;}
+  .mc-name-en{font-size:12px;color:var(--text2);margin-bottom:4px;}
+  .mc-ing{font-size:11px;color:var(--text2);margin-bottom:6px;}
+  .mc-prices{display:flex;flex-wrap:wrap;gap:6px;}
+  .price-cost{font-size:11px;background:rgba(122,20,24,.18);color:var(--cream2);padding:2px 8px;border-radius:8px;}
+  .price-sell{font-size:11px;background:rgba(243,227,195,.15);color:var(--cream);padding:2px 8px;border-radius:8px;}
+  .price-profit.pos{font-size:11px;background:rgba(243,227,195,.15);color:var(--cream);padding:2px 8px;border-radius:8px;}
+  .price-profit.neg{font-size:11px;background:rgba(122,20,24,.22);color:var(--cream);padding:2px 8px;border-radius:8px;}
+  .mc-actions{display:flex;flex-direction:column;gap:6px;}
+  .mc-btn{min-width:56px;height:36px;padding:0 10px;border:none;border-radius:10px;cursor:pointer;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;color:var(--text);}
+  .mc-btn.edit{background:rgba(243,227,195,.18);color:var(--cream);}
+  .mc-btn.del{background:rgba(122,20,24,.28);}
+
+  /* MODAL */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:flex;align-items:flex-end;justify-content:center;z-index:200;}
+  .modal-box{background:var(--bg2);border-radius:24px 24px 0 0;padding:24px 20px 40px;width:100%;max-width:480px;border-top:1px solid var(--border);max-height:90vh;overflow-y:auto;}
+  .modal-title{font-size:18px;font-weight:900;margin-bottom:16px;}
+  .modal-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:13px 14px;border-radius:10px;font-size:15px;margin-bottom:10px;font-family:inherit;outline:none;}
+  .modal-input:focus{border-color:var(--cream);}
+  .img-upload-box{width:100%;height:140px;background:var(--bg3);border:2px dashed var(--border);border-radius:12px;margin-bottom:10px;cursor:pointer;overflow:hidden;display:flex;align-items:center;justify-content:center;}
+  .img-upload-box:active{border-color:var(--cream);}
+  .img-upload-box #mImagePreview{width:100%;height:100%;object-fit:cover;}
+  .img-upload-placeholder{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--text2);font-size:32px;}
+  .img-upload-placeholder span{font-size:13px;}
+  .img-remove-btn{width:100%;background:rgba(122,20,24,.18);color:var(--cream);border:none;border-radius:10px;padding:10px;font-size:13px;font-weight:700;margin-bottom:10px;cursor:pointer;}
+  .modal-actions{display:flex;gap:10px;margin-top:6px;}
+  .modal-btn{flex:1;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer;}
+  .modal-btn.cancel{background:var(--bg3);color:var(--text2);}
+  .modal-btn.save{background:var(--red);color:#fff;}
+
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(60px);background:var(--bg3);color:var(--text);padding:12px 22px;border-radius:50px;font-weight:700;z-index:300;transition:transform .3s,opacity .3s;white-space:nowrap;border:1px solid var(--border);font-size:14px;opacity:0;pointer-events:none;max-width:90vw;text-overflow:ellipsis;overflow:hidden;}
+  .toast.show{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto;}
+  .toast.error{background:var(--red);}
+</style>
+</head>
+<body>
+
+<div class="main-header">
+  <div class="mh-left">
+    <span class="mh-logo">SK</span>
+    <div>
+      <div class="mh-brand">بيتزا الملكة</div>
+      <div class="mh-title" id="pageTitle">الأصناف الأكثر طلباً</div>
+    </div>
+  </div>
+  <span class="conn-dot" id="connDot" title="حالة الاتصال"></span>
+</div>
+
+<div class="main-body">
+
+  <!-- ===== PAGE 1: TOP SELLERS ===== -->
+  <div class="tab-content" id="tab-top" style="display:block;"></div>
+
+  <!-- ===== PAGE 2: ADD MENU ITEMS ===== -->
+  <div class="tab-content" id="tab-menu"></div>
+
+</div>
+
+<nav class="tab-nav">
+  <button class="tab-item active" data-tab="top" onclick="switchTab('top')">
+    الأكثر طلباً
+  </button>
+  <button class="tab-item" data-tab="menu" onclick="switchTab('menu')">
+    إضافة للمنيو
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ===== STATE =====
+  const state = { orders: {}, menu: {}, visits: {}, tab: 'top' };
+  let topFilter = 'all'; // 'today' | 'week' | 'all'
+  let menuSelectMode = false;
+  let selectedMenuIds = new Set();
+  let toastTimer = null;
+
+  // ===== MONEY FORMAT =====
+  function formatMoney(n) {
+    n = Number(n) || 0;
+    return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DZ';
+  }
+
+  function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    if (toastTimer) clearTimeout(toastTimer);
+    t.textContent = msg; t.className = 'toast show' + (type ? ' ' + type : '');
+    toastTimer = setTimeout(() => { t.classList.remove('show'); toastTimer = null; }, 2800);
+  }
+
+  function dbReady() {
+    if (!db) { showToast('لا يوجد اتصال بقاعدة البيانات', 'error'); return false; }
+    return true;
+  }
+
+  // ===== FIREBASE =====
+  const firebaseConfig = {
+    apiKey: "AIzaSyCbXQQa42hAYhNG5iAcFsPcGK7Frg30I-w",
+    authDomain: "pizza-el-malika.firebaseapp.com",
+    projectId: "pizza-el-malika",
+    storageBucket: "pizza-el-malika.firebasestorage.app",
+    messagingSenderId: "865530912294",
+    appId: "1:865530912294:web:277ebb2728168008d9d0e7",
+    measurementId: "G-KBSNQJXCST"
+  };
+  let db = null;
+  try {
+    if (typeof firebase !== 'undefined') {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      if (firebase.analytics) { try { firebase.analytics(); } catch (e) {} }
+    } else {
+      console.warn('Firebase SDK not loaded — running without live data.');
+    }
+  } catch (e) {
+    console.warn('Firebase init failed:', e);
+  }
+
+  function initListeners() {
+    if (!db) { showToast('لا يوجد اتصال بقاعدة البيانات', 'error'); return; }
+
+    db.collection('orders').onSnapshot({ includeMetadataChanges: true }, snap => {
+      document.getElementById('connDot').classList.toggle('on', !snap.metadata.fromCache);
+      const obj = {};
+      snap.forEach(doc => { obj[doc.id] = doc.data(); });
+      state.orders = obj;
+      if (state.tab === 'top') renderTop();
+    }, err => {
+      console.error('orders listener failed:', err);
+      showToast('فشل الاتصال بالطلبات', 'error');
+    });
+
+    db.collection('menu_items').onSnapshot(snap => {
+      const obj = {};
+      snap.forEach(doc => { obj[doc.id] = doc.data(); });
+      state.menu = obj;
+      if (state.tab === 'top') renderTop();
+      if (state.tab === 'menu') renderMenu();
+    }, err => {
+      console.error('menu_items listener failed:', err);
+      showToast('فشل تحميل المنيو', 'error');
+    });
+
+    db.collection('site_visits').onSnapshot(snap => {
+      const obj = {};
+      snap.forEach(doc => { obj[doc.id] = doc.data(); });
+      state.visits = obj;
+      if (state.tab === 'top') renderTop();
+    }, err => {
+      console.error('site_visits listener failed:', err);
+    });
+  }
+
+  // ===== TABS =====
+  function switchTab(tab) {
+    state.tab = tab;
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+    document.getElementById('tab-' + tab).style.display = 'block';
+    document.getElementById('pageTitle').textContent = { top: 'الأصناف الأكثر طلباً', menu: 'إضافة صنف للمنيو' }[tab];
+    ({ top: renderTop, menu: renderMenu })[tab]?.();
+  }
+
+  function setTopFilter(f) {
+    topFilter = f;
+    renderTop();
+  }
+
+  // ===== TOP SELLERS =====
+  function monogram(name) { return (name || '؟').trim().charAt(0); }
+
+  function findMenuItem(menuItems, i) {
+    return menuItems.find(m => String(m.id) === String(i.id) || m.nameEn === i.nameEn || m.name === i.name);
+  }
+
+  function renderTop() {
+    const menuItems = Object.values(state.menu);
+    const allOrders = Object.values(state.orders).filter(o => o.status === 'ready' && o.createdAt);
+
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfWeek = startOfToday - 6 * 24 * 60 * 60 * 1000;
+
+    let orders = allOrders;
+    if (topFilter === 'today') orders = allOrders.filter(o => new Date(o.createdAt).getTime() >= startOfToday);
+    else if (topFilter === 'week') orders = allOrders.filter(o => new Date(o.createdAt).getTime() >= startOfWeek);
+
+    const allVisits = Object.values(state.visits).filter(v => v && v.time);
+    let visits = allVisits;
+    if (topFilter === 'today') visits = allVisits.filter(v => v.time >= startOfToday);
+    else if (topFilter === 'week') visits = allVisits.filter(v => v.time >= startOfWeek);
+    const visitorCount = visits.length;
+
+    const itemStats = {}; // name -> { qty, revenue, img }
+    orders.forEach(o => {
+      (o.items || []).forEach(i => {
+        const key = i.name || i.nameEn || 'صنف';
+        if (!itemStats[key]) itemStats[key] = { qty: 0, revenue: 0, img: null };
+        itemStats[key].qty += (i.qty || 0);
+        itemStats[key].revenue += (i.qty || 0) * (i.price != null ? i.price : 0);
+        const mi = findMenuItem(menuItems, i);
+        if (mi) {
+          itemStats[key].img = mi.img || null;
+          if (!i.price) itemStats[key].revenue += (mi.sellPrice || 0) * (i.qty || 0);
+        }
+      });
+    });
+
+    const sorted = Object.entries(itemStats).sort((a, b) => b[1].qty - a[1].qty);
+    const top3 = sorted.slice(0, 3);
+    const rest = sorted.slice(3, 15);
+    const maxQty = sorted.length ? sorted[0][1].qty : 1;
+
+    const podiumOrder = [
+      top3[1] ? [...top3[1], 2] : null,
+      top3[0] ? [...top3[0], 1] : null,
+      top3[2] ? [...top3[2], 3] : null,
+    ]; // silver, gold, bronze visual order, each with its real rank appended
+    const medalClass = ['silver', 'gold', 'bronze'];
+
+    document.getElementById('tab-top').innerHTML = `
+      <div class="filter-row">
+        <button class="filter-btn ${topFilter === 'today' ? 'active' : ''}" onclick="setTopFilter('today')">اليوم</button>
+        <button class="filter-btn ${topFilter === 'week' ? 'active' : ''}" onclick="setTopFilter('week')">آخر 7 أيام</button>
+        <button class="filter-btn ${topFilter === 'all' ? 'active' : ''}" onclick="setTopFilter('all')">كل الوقت</button>
+      </div>
+
+      <div class="highlight-row">
+        <div class="highlight-card">
+          <div class="hc-lbl">أكثر الأطباق طلباً</div>
+          <div class="hc-val">${sorted.length ? sorted[0][0] : '—'}</div>
+        </div>
+        <div class="highlight-card alt">
+          <div class="hc-lbl">عدد زوار المنيو</div>
+          <div class="hc-val">${visitorCount}</div>
+        </div>
+      </div>
+
+      ${sorted.length === 0 ? '<div class="section-card"><div class="empty-msg">لا توجد بيانات مبيعات لهذه الفترة بعد</div></div>' : `
+      ${top3.length > 0 ? `
+      <div class="podium">
+        ${podiumOrder.map((entry, idx) => {
+          if (!entry) return '';
+          const [name, v, rank] = entry;
+          return `
+          <div class="podium-item ${medalClass[idx]}">
+            <div class="podium-medal">${rank}</div>
+            ${v.img ? `<img class="podium-img" src="${v.img}" alt="">` : `<div class="podium-monogram">${monogram(name)}</div>`}
+            <div class="podium-name">${name}</div>
+            <div class="podium-qty">${v.qty}<small>قطعة</small></div>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+
+      <div class="section-card">
+        <div class="section-head">الترتيب الكامل</div>
+        ${sorted.map(([name, v], i) => `
+          <div class="top-item-row">
+            <div class="ti-rank">${i + 1}</div>
+            <div class="ti-img">${v.img ? `<img src="${v.img}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">` : monogram(name)}</div>
+            <div class="ti-info">
+              <div class="ti-name">${name}</div>
+              <div class="ti-bar-wrap"><div class="ti-bar" style="width:${Math.round((v.qty / maxQty) * 100)}%"></div></div>
+            </div>
+            <div class="ti-right">
+              <div class="ti-qty">${v.qty} قطعة</div>
+              <div class="ti-rev">${formatMoney(v.revenue)}</div>
+            </div>
+          </div>`).join('')}
+      </div>`}
+    `;
+  }
+
+  // ===== MENU MANAGEMENT =====
+  function toggleMenuSelectMode() {
+    menuSelectMode = !menuSelectMode;
+    if (!menuSelectMode) selectedMenuIds.clear();
+    renderMenu();
+  }
+
+  function toggleMenuItemSelect(id) {
+    if (selectedMenuIds.has(id)) selectedMenuIds.delete(id);
+    else selectedMenuIds.add(id);
+    renderMenu();
+  }
+
+  function selectAllMenuItems() {
+    const ids = Object.keys(state.menu);
+    if (selectedMenuIds.size === ids.length) selectedMenuIds.clear();
+    else ids.forEach(id => selectedMenuIds.add(id));
+    renderMenu();
+  }
+
+  function deleteSelectedMenuItems() {
+    if (selectedMenuIds.size === 0) return;
+    if (!confirm(`حذف ${selectedMenuIds.size} صنف محدد نهائيا؟`)) return;
+    if (!dbReady()) return;
+    const batch = db.batch();
+    selectedMenuIds.forEach(id => batch.delete(db.collection('menu_items').doc(id)));
+    batch.commit().then(() => {
+      showToast(`تم حذف ${selectedMenuIds.size} صنف`);
+    }).catch(err => {
+      console.error('Batch delete failed:', err);
+      showToast('فشل الحذف: ' + (err && err.message ? err.message : err), 'error');
+    });
+    selectedMenuIds.clear();
+    menuSelectMode = false;
+  }
+
+  function renderMenu() {
+    const items = Object.entries(state.menu);
+    document.getElementById('tab-menu').innerHTML = `
+      <div class="menu-toolbar">
+        <button class="add-btn" onclick="openMenuModal()">إضافة صنف جديد</button>
+        <button class="select-toggle-btn" onclick="toggleMenuSelectMode()">${menuSelectMode ? 'إلغاء' : 'تحديد'}</button>
+      </div>
+      ${menuSelectMode ? `
+      <div class="select-bar">
+        <button class="select-bar-btn" onclick="selectAllMenuItems()">${selectedMenuIds.size === items.length && items.length > 0 ? 'إلغاء تحديد الكل' : 'تحديد الكل'}</button>
+        <button class="select-bar-btn danger" onclick="deleteSelectedMenuItems()" ${selectedMenuIds.size === 0 ? 'disabled' : ''}>حذف المحدد (${selectedMenuIds.size})</button>
+      </div>` : ''}
+      <div class="menu-list">
+        ${items.length === 0 ? '<div class="empty-msg">لا توجد أصناف بعد — اضغط "إضافة صنف جديد"</div>' :
+          items.map(([id, m]) => `
+            <div class="menu-card ${menuSelectMode ? 'selectable' : ''} ${selectedMenuIds.has(id) ? 'selected' : ''}" ${menuSelectMode ? `onclick="toggleMenuItemSelect('${id}')"` : ''}>
+              ${menuSelectMode ? `<div class="mc-checkbox">${selectedMenuIds.has(id) ? '[x]' : '[ ]'}</div>` : ''}
+              <div class="mc-emoji">${m.img ? `<img src="${m.img}" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">` : monogram(m.name)}</div>
+              <div class="mc-info">
+                <div class="mc-name">${m.name}</div>
+                <div class="mc-name-en">${m.category || ''}</div>
+                <div class="mc-prices">
+                  <span class="price-sell">السعر: ${formatMoney(m.sellPrice || 0)}</span>
+                </div>
+              </div>
+              ${!menuSelectMode ? `
+              <div class="mc-actions">
+                <button class="mc-btn edit" onclick="event.stopPropagation();openMenuModal('${id}')">تعديل</button>
+                <button class="mc-btn del" onclick="event.stopPropagation();deleteMenuItem('${id}')">حذف</button>
+              </div>` : ''}
+            </div>`).join('')}
+      </div>
+      <div class="modal-overlay" id="menuModal" style="display:none" onclick="if(event.target===this)closeMenuModal()">
+        <div class="modal-box">
+          <div class="modal-title" id="menuModalTitle">إضافة صنف</div>
+          <input class="modal-input" id="mName" placeholder="اسم الصنف *">
+          <input class="modal-input" id="mCategory" placeholder="الصنف (مثال: مشروبات، حلويات، ساندويتشات...) *">
+          <input class="modal-input" id="mImage" type="hidden">
+          <div class="img-upload-box" id="mImageBox" onclick="document.getElementById('mImageFile').click()">
+            <img id="mImagePreview" style="display:none;">
+            <div id="mImagePlaceholder" class="img-upload-placeholder"><span>اضغط لإضافة صورة</span></div>
+          </div>
+          <input type="file" id="mImageFile" accept="image/*" style="display:none" onchange="handleItemImageSelect(event)">
+          <button type="button" class="img-remove-btn" id="mImageRemoveBtn" style="display:none" onclick="removeItemImage(event)">حذف الصورة</button>
+          <input class="modal-input" type="number" id="mSellPrice" placeholder="السعر (دج) *">
+          <input class="modal-input" id="mId" type="hidden">
+          <div class="modal-actions">
+            <button class="modal-btn cancel" onclick="closeMenuModal()">إلغاء</button>
+            <button class="modal-btn save" onclick="saveMenuItem()">حفظ</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function openMenuModal(id) {
+    document.getElementById('menuModal').style.display = 'flex';
+    if (id && state.menu[id]) {
+      const m = state.menu[id];
+      document.getElementById('menuModalTitle').textContent = 'تعديل الصنف';
+      document.getElementById('mName').value = m.name || '';
+      document.getElementById('mImage').value = m.img || '';
+      togglePreview(m.img || '');
+      document.getElementById('mSellPrice').value = m.sellPrice || '';
+      document.getElementById('mCategory').value = m.category || '';
+      document.getElementById('mId').value = id;
+    } else {
+      document.getElementById('menuModalTitle').textContent = 'إضافة صنف جديد';
+      ['mName', 'mImage', 'mSellPrice', 'mCategory', 'mId'].forEach(i => document.getElementById(i).value = '');
+      togglePreview('');
+    }
+  }
+
+  function closeMenuModal() { document.getElementById('menuModal').style.display = 'none'; }
+
+  function togglePreview(url) {
+    const img = document.getElementById('mImagePreview');
+    const placeholder = document.getElementById('mImagePlaceholder');
+    const removeBtn = document.getElementById('mImageRemoveBtn');
+    if (url) {
+      img.src = url; img.style.display = 'block';
+      placeholder.style.display = 'none';
+      removeBtn.style.display = 'block';
+    } else {
+      img.style.display = 'none'; img.src = '';
+      placeholder.style.display = 'flex';
+      removeBtn.style.display = 'none';
+    }
+  }
+
+  function handleItemImageSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const img = new Image();
+      img.onload = function () {
+        const MAX = 600;
+        let w = img.width, h = img.height;
+        if (w > h && w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+        else if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const compressed = canvas.toDataURL('image/jpeg', 0.7);
+        document.getElementById('mImage').value = compressed;
+        togglePreview(compressed);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeItemImage(event) {
+    if (event) event.stopPropagation();
+    document.getElementById('mImage').value = '';
+    document.getElementById('mImageFile').value = '';
+    togglePreview('');
+  }
+
+  function saveMenuItem() {
+    const name = document.getElementById('mName').value.trim();
+    const category = document.getElementById('mCategory').value.trim();
+    const sellPrice = parseFloat(document.getElementById('mSellPrice').value);
+    if (!name) { showToast('أدخل اسم الصنف', 'error'); return; }
+    if (!category) { showToast('أدخل الصنف', 'error'); return; }
+    if (isNaN(sellPrice)) { showToast('أدخل السعر', 'error'); return; }
+    if (!dbReady()) return;
+    const existingId = document.getElementById('mId').value;
+    const itemId = existingId || ('item_' + Date.now());
+    const existing = existingId ? (state.menu[existingId] || {}) : {};
+    const data = {
+      ...existing,
+      id: itemId, name,
+      nameEn: existing.nameEn || name,
+      img: document.getElementById('mImage').value.trim() || null,
+      sellPrice,
+      category,
+    };
+    db.collection('menu_items').doc(itemId).set(data).then(() => {
+      closeMenuModal();
+      showToast('تم حفظ الصنف');
+    }).catch(err => {
+      console.error('Save menu item failed:', err);
+      showToast('فشل الحفظ: ' + (err && err.message ? err.message : err), 'error');
+    });
+  }
+
+  function deleteMenuItem(id) {
+    if (!confirm('حذف هذا الصنف؟')) return;
+    if (!dbReady()) return;
+    db.collection('menu_items').doc(id).delete().then(() => showToast('تم الحذف')).catch(err => {
+      console.error('Delete menu item failed:', err);
+      showToast('فشل الحذف: ' + (err && err.message ? err.message : err), 'error');
+    });
+  }
+
+  // ===== INIT =====
+  window.addEventListener('DOMContentLoaded', () => {
+    initListeners();
+    renderTop();
+  });
+</script>
+</body>
+</html>
